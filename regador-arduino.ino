@@ -1,12 +1,10 @@
 #include <LiquidCrystal.h>
 
 LiquidCrystal lcd(8, 13, 9, 4, 5, 6, 7);
-int time;
-int lcd_key     = 0;
+
 int adc_key_in  = 0;
 int idModeRiego;
-int idModeHum;  //TODO: cambiar a variable local?
-int idMenu;
+//int idModeHum;  //TODO: cambiar a variable local?
 //teclado
 #define btnRIGHT  0
 #define btnUP     1
@@ -18,14 +16,7 @@ int idMenu;
 #define modeTime  0
 #define modeHum   1
 #define modeMix   2
-//menus
-#define idMenuPrinc 0
-#define idMenuTime  1
-#define idMenuHum   2
-#define idMenuMix   3
-#define idMenuHumAct  4
 
-char* menus[] = {"Modo de riego: ","menuTime","Humedad:"};
 char* modeRiego[] = {"<Tiempo        >","<Humedad       >","<Mixto         >"};
 char* menuHum[] = {"<Actual       >","<Set          >"};
 
@@ -49,54 +40,24 @@ void setup()
   lcd.setCursor(0,1); 
   lcd.print("REGADOR ARDUINO");
 
-  time = millis();
   delay(4000);
   lcd.clear();
-  //analogWrite(10,50); setea intensidad del lcd
+  analogWrite(10,80); //setea intensidad del lcd
   idModeRiego = modeTime; //inicializo modo de riego 
-  idMenu = idMenuPrinc; //inicializo menu
-  idModeHum = 0;  //inicializo menu Hum. NO CAMBIAR
 }
 
 void loop()
 {      
-    lcd.setCursor(0,0);
-    lcd.print(menus[idMenu]);//lcd.print(idModeRiego);
+  int lcd_key;  //inicializo?
 
-    switch(idMenu) {
-      case idMenuPrinc:
-        menuPrincipal();
-        break;
-      case idMenuTime:
-        subMenuTime();
-        break;
-      case idMenuHum:
-        subMenuHum();
-    }
-}
-
-int read_LCD_buttons()  //FIXME
-  { adc_key_in = analogRead(0);      // Leemos A0
-    //Valores de medicion: rigth 0, down 254, up 99, left 407, select 638, none 1023.
-   
-    //delay para que no tome el valor repetidas veces en poco tiempo.
-  
-    //comparamos con un margen comodo
-    if (adc_key_in > 900) return btnNONE;     // Ningun boton pulsado 
-    if (adc_key_in < 50)  {delay(200);return btnRIGHT;}
-    if (adc_key_in < 200) return btnUP;
-    if (adc_key_in < 350) {delay(200);return btnDOWN;}
-    if (adc_key_in < 500) {delay(200);return btnLEFT;}
-    if (adc_key_in < 850) {delay(200);return btnSELECT;}
-    
-    return btnNONE;  // si todo falla
-  }
-
-void menuPrincipal() 
-{
+  //MENU PRINCIPAL
+  lcd.setCursor(0,0);
+  lcd.print("MODO DE RIEGO: ");//lcd.print(idModeRiego);
   lcd.setCursor(0,1);
   lcd.print(modeRiego[idModeRiego]);
+
   lcd_key = read_LCD_buttons();
+
   switch (lcd_key) {
     case btnRIGHT:
       if (idModeRiego <2)
@@ -122,58 +83,145 @@ void menuPrincipal()
     default:
       break;
   }  
+    
 }
+
+int read_LCD_buttons()  //FIXME
+  { adc_key_in = analogRead(0);      // Leemos A0
+    //Valores de medicion: rigth 0, down 254, up 99, left 407, select 638, none 1023.
+   
+    //delay para que no tome el valor repetidas veces en poco tiempo.
+  
+    //comparamos con un margen comodo
+    if (adc_key_in > 900) return btnNONE;     // Ningun boton pulsado 
+    if (adc_key_in < 50)  {delay(200);return btnRIGHT;}
+    if (adc_key_in < 200) return btnUP;
+    if (adc_key_in < 350) {delay(200);return btnDOWN;}
+    if (adc_key_in < 500) {delay(200);return btnLEFT;}
+    if (adc_key_in < 850) {delay(200);return btnSELECT;}
+    
+    return btnNONE;  // si todo falla
+  }
 
 void subMenuSelected() {
 
+  lcd.clear();  //Limpio menú principal
+
   switch (idModeRiego) {
     case modeTime:
-      idMenu = idMenuTime;
+      subMenuTime();
       break;
     case modeHum:
-      idMenu = idMenuHum;
+      subMenuHum();
       break;
     case modeMix:
-      idMenu = idMenuMix;
+      //subMenuMix();
       break;
   }
-  lcd.clear(); //Limpio menú anterior
 }
 
-void subMenuTime() {
-  
-  lcd.setCursor(10,1);
-  lcd.print("salir"); lcd.write(byte(0));
+void subMenuTime() {  
 
-  //FIXME
-  lcd_key = read_LCD_buttons();
-  if (lcd_key == btnDOWN){
-    idMenu = idMenuPrinc;
-  } 
+  int lcd_key;
+
+  do{
+
+    lcd_key = read_LCD_buttons();
+
+    lcd.setCursor(0,0);
+    lcd.print("menuTime");
+    lcd.setCursor(10,1);
+    lcd.print("salir"); lcd.write(byte(0));
+      
+  } while (lcd_key != btnDOWN); 
 }
 
 void subMenuHum() {
-  lcd.setCursor(0,1);
-  lcd.print(menuHum[idModeHum]); lcd.write(byte(0));
 
-  //FIXME
-  lcd_key = read_LCD_buttons();
-  if (lcd_key == btnDOWN){
-    idMenu = idMenuPrinc;
-  } 
+  int lcd_key;
+  int idModeHum = 0;
 
-  if (lcd_key == btnRIGHT)  {
-    if (idModeHum < 1)
-      idModeHum++;
-    else
-      idModeHum = 0;
-  } else if (lcd_key == btnLEFT)  {
-    if (idModeHum !=0)
-      idModeHum--;
-    else
-      idModeHum = 1;
-  } else if (lcd_key == btnSELECT)  {
-    idMenu = idMenuHumAct;  //TODO!!!    
-  }
+  do{
+  
+    lcd.setCursor(0,0);
+    lcd.print("Humedad:");
+    lcd.setCursor(0,1);
+    lcd.print(menuHum[idModeHum]); lcd.write(byte(0));
+
+    lcd_key = read_LCD_buttons();
+
+    if (lcd_key == btnRIGHT)  {
+      if (idModeHum < 1)
+        idModeHum++;
+      else
+        idModeHum = 0;
+    } else if (lcd_key == btnLEFT)  {
+      if (idModeHum !=0)
+        idModeHum--;
+      else
+        idModeHum = 1;
+    } else if (lcd_key == btnSELECT)  {
+      menuHumAct(idModeHum);
+    }
+      
+  } while (lcd_key != btnDOWN);
 }
 
+void menuHumAct(int menuSelected)  {
+
+  int lcd_key;
+  lcd.clear();
+
+  if (menuSelected == 0)  { //humedad actual
+
+    do{
+
+      lcd.setCursor(0,0);
+      lcd.print("Humedad Actual");
+      lcd.setCursor(5,1); 
+      lcd.print("%90"); //hardcodeo ejemplo
+      lcd.setCursor(15,1);lcd.write(byte(0));
+
+      lcd_key = read_LCD_buttons();
+
+    } while (lcd_key != btnDOWN);
+
+  } else  { //setear humedad
+
+    int valueHum  = 0;
+
+    do{
+      
+      lcd.setCursor(0,0);
+      lcd.print("Humedad Deseada:");
+      lcd.setCursor(2,1); 
+      lcd.print("<   ");lcd.print("%");lcd.print(valueHum);lcd.print("   >");
+      lcd.setCursor(15,1);lcd.write(byte(0));      
+
+      lcd_key = read_LCD_buttons();
+
+      if (lcd_key == btnRIGHT)  {
+        
+        if (valueHum  < 100)  {
+          valueHum++;
+        } else {
+          valueHum = 0;
+          lcd.setCursor(13,1); lcd.print(" ");  //shh aca no paso nada
+        }
+      
+      } else if(lcd_key == btnLEFT) {
+      
+        if (valueHum  != 0)  {
+          valueHum--; if(valueHum == 99){lcd.setCursor(13,1); lcd.print(" ");}  //sssssshh aca tampoco paso nada
+        } else {
+          valueHum = 100;
+        }         
+
+      }
+
+    } while (lcd_key != btnDOWN);
+  }
+
+  lcd.clear();  //limpio menu
+
+}
