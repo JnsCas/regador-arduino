@@ -161,13 +161,13 @@ void subMenuHum() {
       else
         idModeHum = 1;
     } else if (lcd_key == btnSELECT)  {
-      menuHumAct(idModeHum);
+      subMenuHumSelected(idModeHum);
     }
       
   } while (lcd_key != btnDOWN);
 }
 
-void menuHumAct(int menuSelected)  {
+void subMenuHumSelected(int menuSelected)  {
 
   int lcd_key;
   lcd.clear();
@@ -180,6 +180,7 @@ void menuHumAct(int menuSelected)  {
       lcd.print("Humedad Actual");
       lcd.setCursor(5,1); 
       lcd.print("%90"); //hardcodeo ejemplo
+      // lcd.print("<%" + lcd_key + ">");  TODO: convertir lcd_key a string.
       lcd.setCursor(15,1);lcd.write(byte(0));
 
       lcd_key = read_LCD_buttons();
@@ -194,8 +195,8 @@ void menuHumAct(int menuSelected)  {
       
       lcd.setCursor(0,0);
       lcd.print("Humedad Deseada:");
-      lcd.setCursor(2,1); 
-      lcd.print("<   ");lcd.print("%");lcd.print(valueHum);lcd.print("   >");
+      lcd.setCursor(6,1); 
+      lcd.print("<");lcd.print("%");lcd.print(valueHum);lcd.setCursor(11,1);lcd.print(">");
       lcd.setCursor(15,1);lcd.write(byte(0));      
 
       lcd_key = read_LCD_buttons();
@@ -203,18 +204,36 @@ void menuHumAct(int menuSelected)  {
       if (lcd_key == btnRIGHT)  {
         
         if (valueHum  < 100)  {
+
           valueHum++;
+
         } else {
+
           valueHum = 0;
-          lcd.setCursor(13,1); lcd.print(" ");  //shh aca no paso nada
+          lcd.setCursor(9,1); lcd.print("  ");  //limpio caracter. FIXME
+
         }
       
       } else if(lcd_key == btnLEFT) {
       
         if (valueHum  != 0)  {
-          valueHum--; if(valueHum == 99){lcd.setCursor(13,1); lcd.print(" ");}  //sssssshh aca tampoco paso nada
+
+          valueHum--; 
+
+          if(valueHum == 99)  {
+
+            lcd.setCursor(10,1); lcd.print(" ");  //limpio caracter. FIXME
+
+          } else if(valueHum == 9){
+
+            lcd.setCursor(9,1); lcd.print(" ");  //limpio caracter . FIXME 
+              
+          }
+
         } else {
+
           valueHum = 100;
+
         }         
 
       }
