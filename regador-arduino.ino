@@ -4,6 +4,9 @@ LiquidCrystal lcd(8, 13, 9, 4, 5, 6, 7);
 
 int adc_key_in  = 0;
 int idModeRiego;
+int valueHumMinSet = 0;
+int valueHumMaxSet = 0;
+int modeSelected = -1;
 //int idModeHum;  //TODO: cambiar a variable local?
 //teclado
 #define btnRIGHT  0
@@ -58,32 +61,25 @@ void loop()
 
   lcd_key = read_LCD_buttons();
 
-  switch (lcd_key) {
-    case btnRIGHT:
-      if (idModeRiego <2)
-      idModeRiego++;
-    else
-      idModeRiego = 0;
-      //idModeRiego = modeMix;
-      break;
-    case btnLEFT:
-      if (idModeRiego != 0)
-        idModeRiego--;
-      else
-        idModeRiego = 2;
-      break;
-    case btnUP:
-      lcd.print("UP    ");
-      break;
-    case btnDOWN:
-      break;
-    case btnSELECT:
-      subMenuSelected();
-      break;
-    default:
-      break;
-  }  
+  idModeRiego = chooseValue(lcd_key, idModeRiego, 1, 0, 2);
+
+  if(lcd_key == btnSELECT)  {
+    subMenuSelected();
+  }
     
+  //TODO: investigar uso de threads
+  switch (modeSelected) {
+      case modeTime:
+        // regar periodicamente
+        break;
+      case modeHum:
+        // regar por humedad. Mantiene en un rango de %10 de la humedad elegida.
+        break;
+      case modeMix:
+        // mixto
+        break;
+  }
+
 }
 
 int read_LCD_buttons()  //FIXME
@@ -150,17 +146,9 @@ void subMenuHum() {
 
     lcd_key = read_LCD_buttons();
 
-    if (lcd_key == btnRIGHT)  {
-      if (idModeHum < 1)
-        idModeHum++;
-      else
-        idModeHum = 0;
-    } else if (lcd_key == btnLEFT)  {
-      if (idModeHum !=0)
-        idModeHum--;
-      else
-        idModeHum = 1;
-    } else if (lcd_key == btnSELECT)  {
+    idModeHum = chooseValue(lcd_key, idModeHum, 1, 0, 1);
+
+    if (lcd_key == btnSELECT)  {
       subMenuHumSelected(idModeHum);
     }
       
@@ -189,58 +177,66 @@ void subMenuHumSelected(int menuSelected)  {
 
   } else  { //setear humedad
 
-    int valueHum  = 0;
+    int valueHumMin  = 0;
 
     do{
       
       lcd.setCursor(0,0);
-      lcd.print("Humedad Deseada:");
+      lcd.print("Humedad Min.:");
       lcd.setCursor(6,1); 
-      lcd.print("<");lcd.print("%");lcd.print(valueHum);lcd.setCursor(11,1);lcd.print(">");
+      // lcd.print("<");lcd.print("%");lcd.print(valueHumMin);lcd.setCursor(11,1);lcd.print(">");
+      lcd.print("<%" + String(valueHumMin) + ">");
       lcd.setCursor(15,1);lcd.write(byte(0));      
 
       lcd_key = read_LCD_buttons();
 
-      if (lcd_key == btnRIGHT)  {
-        
-        if (valueHum  < 100)  {
+      valueHumMin = chooseValue(lcd_key, valueHumMin, 1, 0, 100);
 
-          valueHum++;
+      if (lcd_key == btnSELECT){
 
-        } else {
+        int valueHumMax = 0;
+        lcd.clear();
 
-          valueHum = 0;
-          lcd.setCursor(9,1); lcd.print("  ");  //limpio caracter. FIXME
-
-        }
-      
-      } else if(lcd_key == btnLEFT) {
-      
-        if (valueHum  != 0)  {
-
-          valueHum--; 
-
-          if(valueHum == 99)  {
-
-            lcd.setCursor(10,1); lcd.print(" ");  //limpio caracter. FIXME
-
-          } else if(valueHum == 9){
-
-            lcd.setCursor(9,1); lcd.print(" ");  //limpio caracter . FIXME 
+        do{              
+          //elegir rango
+          lcd.setCursor(0,0);
+          lcd.print("Humedad Max.:");
+          lcd.setCursor(6,1); 
+          lcd.print("<");lcd.print("%");lcd.print(valueHumMax);lcd.setCursor(11,1);lcd.print(">");
+          lcd.setCursor(15,1);lcd.write(byte(0));      
               
-          }
+          lcd_key = read_LCD_buttons();
 
-        } else {
+          valueHumMax = chooseValue(lcd_key, valueHumMax, 1, 0, 100);
+        } while (lcd_key != btnDOWN);
 
-          valueHum = 100;
-
-        }         
-
+        // if(lcd_key != btnDOWN){
+        //   //seteo variables globales
+        //   valueHumMinSet = valueHumMin;
+        //   modeSelected  = modeHum;
+        // }
       }
-
     } while (lcd_key != btnDOWN);
-  }
+
 
   lcd.clear();  //limpio menu
 
+  }
+}
+
+//modifica un valor de 0 a 100 elegido con cierto rango.
+int chooseValue(int key_in ,int value ,int range,int rangeMin ,int rangeMax)  {
+  if (key_in == btnRIGHT)  {
+      if (value < rangeMax)
+        value+= range;
+      else
+        value = rangeMin;
+  } else if (key_in == btnLEFT)  {
+     if (value != rangeMin)
+       value-= range;
+     else
+       value = rangeMax;
+    }
+
+  return value;
 }
