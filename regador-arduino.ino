@@ -61,7 +61,7 @@ void loop()
 
   lcd_key = read_LCD_buttons();
 
-  idModeRiego = chooseValue(lcd_key, idModeRiego, 1, 0, 2);
+  chooseValue(lcd_key, &idModeRiego, 1, 0, 2);
 
   if(lcd_key == btnSELECT)  {
     subMenuSelected();
@@ -146,7 +146,7 @@ void subMenuHum() {
 
     lcd_key = read_LCD_buttons();
 
-    idModeHum = chooseValue(lcd_key, idModeHum, 1, 0, 1);
+    chooseValue(lcd_key, &idModeHum, 1, 0, 1);
 
     if (lcd_key == btnSELECT)  {
       subMenuHumSelected(idModeHum);
@@ -168,7 +168,6 @@ void subMenuHumSelected(int menuSelected)  {
       lcd.print("Humedad Actual");
       lcd.setCursor(5,1); 
       lcd.print("%90"); //hardcodeo ejemplo
-      // lcd.print("<%" + lcd_key + ">");  TODO: convertir lcd_key a string.
       lcd.setCursor(15,1);lcd.write(byte(0));
 
       lcd_key = read_LCD_buttons();
@@ -184,13 +183,12 @@ void subMenuHumSelected(int menuSelected)  {
       lcd.setCursor(0,0);
       lcd.print("Humedad Min.:");
       lcd.setCursor(6,1); 
-      // lcd.print("<");lcd.print("%");lcd.print(valueHumMin);lcd.setCursor(11,1);lcd.print(">");
       lcd.print("<%" + String(valueHumMin) + ">");
       lcd.setCursor(15,1);lcd.write(byte(0));      
 
       lcd_key = read_LCD_buttons();
 
-      valueHumMin = chooseValue(lcd_key, valueHumMin, 1, 0, 100);
+      chooseValue(lcd_key, &valueHumMin, 1, 0, 100);
 
       if (lcd_key == btnSELECT){
 
@@ -202,12 +200,12 @@ void subMenuHumSelected(int menuSelected)  {
           lcd.setCursor(0,0);
           lcd.print("Humedad Max.:");
           lcd.setCursor(6,1); 
-          lcd.print("<");lcd.print("%");lcd.print(valueHumMax);lcd.setCursor(11,1);lcd.print(">");
+          lcd.print("<%" + String(valueHumMax) + ">");
           lcd.setCursor(15,1);lcd.write(byte(0));      
               
           lcd_key = read_LCD_buttons();
 
-          valueHumMax = chooseValue(lcd_key, valueHumMax, 1, 0, 100);
+          chooseValue(lcd_key, &valueHumMax, 1, 0, 100);
         } while (lcd_key != btnDOWN);
 
         // if(lcd_key != btnDOWN){
@@ -217,26 +215,34 @@ void subMenuHumSelected(int menuSelected)  {
         // }
       }
     } while (lcd_key != btnDOWN);
-
+  }
 
   lcd.clear();  //limpio menu
-
-  }
 }
 
 //modifica un valor de 0 a 100 elegido con cierto rango.
-int chooseValue(int key_in ,int value ,int range,int rangeMin ,int rangeMax)  {
+void chooseValue(int key_in ,int *value ,int range,int rangeMin ,int rangeMax)  {
   if (key_in == btnRIGHT)  {
-      if (value < rangeMax)
-        value+= range;
+      if (*value < rangeMax)
+        *value+= range;
       else
-        value = rangeMin;
+        *value = rangeMin;
+        //limpio caracteres
+        lcd.setCursor(10,1);
+        lcd.print("  ");
   } else if (key_in == btnLEFT)  {
-     if (value != rangeMin)
-       value-= range;
-     else
-       value = rangeMax;
+       if (*value != rangeMin)
+         *value-= range;
+       else
+         *value = rangeMax;
+      //limpio caracter
+      if (*value == 9)  {
+        lcd.setCursor(10,1);
+        lcd.print(" ");
+      }
+      if (*value == 99) {
+        lcd.setCursor(11,1);
+        lcd.print(" ");
+      }
     }
-
-  return value;
 }
