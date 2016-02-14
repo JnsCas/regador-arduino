@@ -7,7 +7,9 @@ int idModeRiego;
 int valueHumMinSet = 0;
 int valueHumMaxSet = 0;
 int modeSelected = -1;
-//int idModeHum;  //TODO: cambiar a variable local?
+int rangeHoursSet;
+int timeRegarSet;
+int time;
 //teclado
 #define btnRIGHT  0
 #define btnUP     1
@@ -47,15 +49,17 @@ void setup()
   lcd.clear();
   analogWrite(10,80); //setea intensidad del lcd
   idModeRiego = modeTime; //inicializo modo de riego 
+  time = millis();
 }
 
 void loop()
 {      
-  int lcd_key;  //inicializo?
+
+  int lcd_key;
 
   //MENU PRINCIPAL
   lcd.setCursor(0,0);
-  lcd.print("MODO DE RIEGO: ");//lcd.print(idModeRiego);
+  lcd.print("MODO DE RIEGO: ");
   lcd.setCursor(0,1);
   lcd.print(modeRiego[idModeRiego]);
 
@@ -118,18 +122,57 @@ void subMenuSelected() {
 
 void subMenuTime() {  
 
-  int lcd_key;
+  int lcd_key = btnNONE;
+  int rangeHours  = 1;
 
-  do{
+  while(lcd_key != btnDOWN) {
 
     lcd_key = read_LCD_buttons();
 
     lcd.setCursor(0,0);
-    lcd.print("menuTime");
-    lcd.setCursor(10,1);
-    lcd.print("salir"); lcd.write(byte(0));
+    lcd.print("Regar cada: ");
+    lcd.setCursor(6,1);
+    lcd.print("<" + String(rangeHours)); 
+    lcd.setCursor(9,1); lcd.print(">");
+    lcd.setCursor(11,1); lcd.print("Hs"); 
+    lcd.setCursor(15,1); lcd.write(byte(0));
+
+    chooseValue(lcd_key, &rangeHours, 1, 1, 24);
+
+    if(lcd_key == btnSELECT)  {
       
-  } while (lcd_key != btnDOWN); 
+      int timeRegar = 1;
+      rangeHoursSet = rangeHours;
+      lcd.clear();
+
+      while (lcd_key != btnDOWN)  {
+          
+        lcd_key = read_LCD_buttons();
+
+        lcd.setCursor(0,0);
+        lcd.print("Tiempo a regar:");
+        lcd.setCursor(6,1);
+        lcd.print("<" + String(timeRegar) + "> Min.");
+
+        chooseValue(lcd_key, &timeRegar, 1, 1, 10);
+
+        if(lcd_key == btnSELECT)  {
+
+          modeSelected = modeTime;
+          timeRegarSet  = timeRegar;
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Time Set:");
+          lcd.setCursor(0,1);
+          lcd.print(String(rangeHoursSet) + "Hs. / " + String(timeRegar) + "min.");
+          lcd_key = btnDOWN; //Vuelve al menu principal
+          delay(4000);
+              
+        }
+      }
+    }
+  }
+  lcd.clear();
 }
 
 void subMenuHum() {
@@ -192,6 +235,7 @@ void subMenuHumSelected(int menuSelected)  {
 
       if (lcd_key == btnSELECT){
 
+        valueHumMinSet = valueHumMin;
         int valueHumMax = 0;
         lcd.clear();
 
@@ -206,30 +250,45 @@ void subMenuHumSelected(int menuSelected)  {
           lcd_key = read_LCD_buttons();
 
           chooseValue(lcd_key, &valueHumMax, 1, 0, 100);
-        } while (lcd_key != btnDOWN);
+          
+          if(lcd_key == btnSELECT)  {
 
-        // if(lcd_key != btnDOWN){
-        //   //seteo variables globales
-        //   valueHumMinSet = valueHumMin;
-        //   modeSelected  = modeHum;
-        // }
+            modeSelected = modeHum;
+            valueHumMaxSet  = valueHumMax;
+            lcd.clear();
+            lcd.setCursor(0,0);
+            lcd.print("Humedad Set:");
+            lcd.setCursor(5,1);
+            lcd.print("%" + String(valueHumMinSet) + " - %" + String(valueHumMax));
+            delay(4000);
+            lcd_key = btnDOWN; //vuelve al menu principal
+          }
+        } while (lcd_key != btnDOWN);
       }
     } while (lcd_key != btnDOWN);
+
   }
 
   lcd.clear();  //limpio menu
 }
 
 //modifica un valor de 0 a 100 elegido con cierto rango.
-void chooseValue(int key_in ,int *value ,int range,int rangeMin ,int rangeMax)  {
+void chooseValue(int key_in ,int *value ,int range,int rangeMin ,int rangeMax)  { //FIXME!!!  pasar pos por parametro y setCursor(pos+a)
   if (key_in == btnRIGHT)  {
-      if (*value < rangeMax)
+      if (*value < rangeMax)  {
         *value+= range;
-      else
+      }
+      else {
         *value = rangeMin;
-        //limpio caracteres
-        lcd.setCursor(10,1);
-        lcd.print("  ");
+        if(*value >= 100) { //3 caracteres
+          //limpio caracteres
+          lcd.setCursor(10,1);
+          lcd.print("  ");
+        } else {  //2 caracteres
+          lcd.setCursor(10,1);
+          lcd.print(" ");          
+        }
+      }
   } else if (key_in == btnLEFT)  {
        if (*value != rangeMin)
          *value-= range;
