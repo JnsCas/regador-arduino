@@ -65,7 +65,7 @@ void loop()
 
   lcd_key = read_LCD_buttons();
 
-  chooseValue(lcd_key, &idModeRiego, 1, 0, 2);
+  chooseValue(lcd_key, &idModeRiego, 0, 1, 0, 2);
 
   if(lcd_key == btnSELECT)  {
     subMenuSelected();
@@ -133,11 +133,11 @@ void subMenuTime() {
     lcd.print("Regar cada: ");
     lcd.setCursor(6,1);
     lcd.print("<" + String(rangeHours)); 
-    lcd.setCursor(9,1); lcd.print(">");
-    lcd.setCursor(11,1); lcd.print("Hs"); 
+    lcd.setCursor(10,1); lcd.print(">");
+    lcd.setCursor(12,1); lcd.print("Hs"); 
     lcd.setCursor(15,1); lcd.write(byte(0));
 
-    chooseValue(lcd_key, &rangeHours, 1, 1, 24);
+    chooseValue(lcd_key, &rangeHours, 7, 1, 1, 24);
 
     if(lcd_key == btnSELECT)  {
       
@@ -152,9 +152,11 @@ void subMenuTime() {
         lcd.setCursor(0,0);
         lcd.print("Tiempo a regar:");
         lcd.setCursor(6,1);
-        lcd.print("<" + String(timeRegar) + "> Min.");
+        lcd.print("<" + String(timeRegar));
+        lcd.setCursor(10,1); lcd.print(">");
+        lcd.setCursor(12,1); lcd.print("Min"); 
 
-        chooseValue(lcd_key, &timeRegar, 1, 1, 10);
+        chooseValue(lcd_key, &timeRegar, 7, 1, 1, 10);
 
         if(lcd_key == btnSELECT)  {
 
@@ -189,7 +191,7 @@ void subMenuHum() {
 
     lcd_key = read_LCD_buttons();
 
-    chooseValue(lcd_key, &idModeHum, 1, 0, 1);
+    chooseValue(lcd_key, &idModeHum, 0, 1, 0, 1);
 
     if (lcd_key == btnSELECT)  {
       subMenuHumSelected(idModeHum);
@@ -219,24 +221,25 @@ void subMenuHumSelected(int menuSelected)  {
 
   } else  { //setear humedad
 
-    int valueHumMin  = 0;
+    int valueHumMin  = 1;
 
     do{
       
       lcd.setCursor(0,0);
       lcd.print("Humedad Min.:");
       lcd.setCursor(6,1); 
-      lcd.print("<%" + String(valueHumMin) + ">");
+      lcd.print("<%" + String(valueHumMin));
+      lcd.setCursor(11,1); lcd.print(">");
       lcd.setCursor(15,1);lcd.write(byte(0));      
 
       lcd_key = read_LCD_buttons();
 
-      chooseValue(lcd_key, &valueHumMin, 1, 0, 100);
+      chooseValue(lcd_key, &valueHumMin, 8, 1, 1, 100);
 
       if (lcd_key == btnSELECT){
 
         valueHumMinSet = valueHumMin;
-        int valueHumMax = 0;
+        int valueHumMax = 1;
         lcd.clear();
 
         do{              
@@ -244,12 +247,13 @@ void subMenuHumSelected(int menuSelected)  {
           lcd.setCursor(0,0);
           lcd.print("Humedad Max.:");
           lcd.setCursor(6,1); 
-          lcd.print("<%" + String(valueHumMax) + ">");
+          lcd.print("<%" + String(valueHumMax));
+          lcd.setCursor(11,1); lcd.print(">");
           lcd.setCursor(15,1);lcd.write(byte(0));      
               
           lcd_key = read_LCD_buttons();
 
-          chooseValue(lcd_key, &valueHumMax, 1, 0, 100);
+          chooseValue(lcd_key, &valueHumMax, 8, 1, 1, 100);
           
           if(lcd_key == btnSELECT)  {
 
@@ -272,36 +276,37 @@ void subMenuHumSelected(int menuSelected)  {
   lcd.clear();  //limpio menu
 }
 
-//modifica un valor de 0 a 100 elegido con cierto rango.
-void chooseValue(int key_in ,int *value ,int range,int rangeMin ,int rangeMax)  { //FIXME!!!  pasar pos por parametro y setCursor(pos+a)
-  if (key_in == btnRIGHT)  {
-      if (*value < rangeMax)  {
-        *value+= range;
-      }
-      else {
-        *value = rangeMin;
-        if(*value >= 100) { //3 caracteres
-          //limpio caracteres
-          lcd.setCursor(10,1);
-          lcd.print("  ");
-        } else {  //2 caracteres
-          lcd.setCursor(10,1);
-          lcd.print(" ");          
+//modifica un valor de 0 a 100 elegido con cierto rango. initPos posicion del primer digito en el lcd.
+void chooseValue(int key_in ,int *value ,int initPos, int range,int rangeMin ,int rangeMax)  {
+  switch (key_in) {
+      case btnRIGHT:
+        if (*value < rangeMax)  {
+          *value+= range;
         }
-      }
-  } else if (key_in == btnLEFT)  {
+        else {
+          *value = rangeMin;
+        }
+        break;
+      case btnLEFT:
        if (*value != rangeMin)
          *value-= range;
        else
          *value = rangeMax;
-      //limpio caracter
-      if (*value == 9)  {
-        lcd.setCursor(10,1);
-        lcd.print(" ");
-      }
-      if (*value == 99) {
-        lcd.setCursor(11,1);
-        lcd.print(" ");
-      }
-    }
+        break;
+  }
+  //limpio caracteres
+  int posClear = initPos;
+  if (*value == 99) {
+    posClear += 2;
+    lcd.setCursor(posClear,1);
+    lcd.print(" ");
+  } else if (*value == 9){
+    posClear += 1;
+    lcd.setCursor(posClear,1);
+    lcd.print(" ");
+  } else if (*value == 1) {
+    posClear += 1;
+    lcd.setCursor(posClear,1);
+    lcd.print("  ");
+  }
 }
