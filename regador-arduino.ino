@@ -23,7 +23,7 @@ int time;
 #define modeMix   2
 
 char* modeRiego[] = {"<Tiempo        >","<Humedad       >","<Mixto         >"};
-char* menuHum[] = {"<Actual       >","<Set          >"};
+char* menuHum[] = {"<Actual        >","<Set           >"};
 
 byte arrow[8] = {
   B00000,
@@ -131,11 +131,11 @@ void subMenuTime() {
 
     lcd.setCursor(0,0);
     lcd.print("Regar cada: ");
+    lcd.setCursor(15,0); lcd.write(byte(0));
     lcd.setCursor(6,1);
     lcd.print("<" + String(rangeHours)); 
     lcd.setCursor(10,1); lcd.print(">");
     lcd.setCursor(12,1); lcd.print("Hs"); 
-    lcd.setCursor(15,1); lcd.write(byte(0));
 
     chooseValue(lcd_key, &rangeHours, 7, 1, 1, 24);
 
@@ -151,6 +151,7 @@ void subMenuTime() {
 
         lcd.setCursor(0,0);
         lcd.print("Tiempo a regar:");
+        lcd.setCursor(15,0); lcd.write(byte(0));
         lcd.setCursor(6,1);
         lcd.print("<" + String(timeRegar));
         lcd.setCursor(10,1); lcd.print(">");
@@ -186,8 +187,9 @@ void subMenuHum() {
   
     lcd.setCursor(0,0);
     lcd.print("Humedad:");
+    lcd.setCursor(15,0); lcd.write(byte(0));
     lcd.setCursor(0,1);
-    lcd.print(menuHum[idModeHum]); lcd.write(byte(0));
+    lcd.print(menuHum[idModeHum]);
 
     lcd_key = read_LCD_buttons();
 
@@ -198,6 +200,8 @@ void subMenuHum() {
     }
       
   } while (lcd_key != btnDOWN);
+
+  lcd.clear();
 }
 
 void subMenuHumSelected(int menuSelected)  {
@@ -211,9 +215,9 @@ void subMenuHumSelected(int menuSelected)  {
 
       lcd.setCursor(0,0);
       lcd.print("Humedad Actual");
+      lcd.setCursor(15,0); lcd.write(byte(0));
       lcd.setCursor(5,1); 
       lcd.print("%90"); //hardcodeo ejemplo
-      lcd.setCursor(15,1);lcd.write(byte(0));
 
       lcd_key = read_LCD_buttons();
 
@@ -227,10 +231,10 @@ void subMenuHumSelected(int menuSelected)  {
       
       lcd.setCursor(0,0);
       lcd.print("Humedad Min.:");
+      lcd.setCursor(15,0); lcd.write(byte(0));
       lcd.setCursor(6,1); 
       lcd.print("<%" + String(valueHumMin));
       lcd.setCursor(11,1); lcd.print(">");
-      lcd.setCursor(15,1);lcd.write(byte(0));      
 
       lcd_key = read_LCD_buttons();
 
@@ -246,10 +250,10 @@ void subMenuHumSelected(int menuSelected)  {
           //elegir rango
           lcd.setCursor(0,0);
           lcd.print("Humedad Max.:");
+          lcd.setCursor(15,0); lcd.write(byte(0));
           lcd.setCursor(6,1); 
           lcd.print("<%" + String(valueHumMax));
-          lcd.setCursor(11,1); lcd.print(">");
-          lcd.setCursor(15,1);lcd.write(byte(0));      
+          lcd.setCursor(11,1); lcd.print(">");     
               
           lcd_key = read_LCD_buttons();
 
@@ -278,6 +282,8 @@ void subMenuHumSelected(int menuSelected)  {
 
 //modifica un valor de 0 a 100 elegido con cierto rango. initPos posicion del primer digito en el lcd.
 void chooseValue(int key_in ,int *value ,int initPos, int range,int rangeMin ,int rangeMax)  {
+
+  int valueAnt  = *value;
   switch (key_in) {
       case btnRIGHT:
         if (*value < rangeMax)  {
@@ -304,7 +310,7 @@ void chooseValue(int key_in ,int *value ,int initPos, int range,int rangeMin ,in
     posClear += 1;
     lcd.setCursor(posClear,1);
     lcd.print(" ");
-  } else if (*value == 1) {
+  } else if (valueAnt == rangeMax && valueAnt != 1 && *value == 1) {  //condiciones para poder usar la funcion para menus
     posClear += 1;
     lcd.setCursor(posClear,1);
     lcd.print("  ");
