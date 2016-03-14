@@ -1,6 +1,6 @@
 #include <LiquidCrystal.h>
 
-LiquidCrystal lcd(8, 13, 9, 4, 5, 6, 7);
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 int adc_key_in  = 0;
 int idModeRiego;
@@ -9,7 +9,10 @@ int valueHumMaxSet = 0;
 int modeSelected = -1;
 int rangeHoursSet;
 int timeRegarSet;
-int time;
+unsigned long time;
+unsigned long timeRegando;
+bool regando = false;
+const int motor = 13;
 //teclado
 #define btnRIGHT  0
 #define btnUP     1
@@ -49,7 +52,8 @@ void setup()
   lcd.clear();
   analogWrite(10,80); //setea intensidad del lcd
   idModeRiego = modeTime; //inicializo modo de riego 
-  time = millis();
+  pinMode(motor,OUTPUT);  
+  
 }
 
 void loop()
@@ -57,32 +61,28 @@ void loop()
 
   int lcd_key;
 
-  //MENU PRINCIPAL
-  lcd.setCursor(0,0);
-  lcd.print("MODO DE RIEGO: ");
-  lcd.setCursor(0,1);
-  lcd.print(modeRiego[idModeRiego]);
+  regador();
 
-  lcd_key = read_LCD_buttons();
+  if (!regando) {
+    //MENU PRINCIPAL
+    lcd.setCursor(0,0);
+    lcd.print("MODO DE RIEGO: ");
+    lcd.setCursor(0,1);
+    lcd.print(modeRiego[idModeRiego]);
 
-  chooseValue(lcd_key, &idModeRiego, 0, 1, 0, 2);
+    lcd_key = read_LCD_buttons();
 
-  if(lcd_key == btnSELECT)  {
-    subMenuSelected();
+    chooseValue(lcd_key, &idModeRiego, 0, 1, 0, 2);
+
+    if(lcd_key == btnSELECT)  {
+      subMenuSelected();
+    }
+
+  } else {
+    lcd.setCursor(0,3);
+    lcd.print("REGANDO..");
   }
     
-  //TODO: investigar uso de threads
-  switch (modeSelected) {
-      case modeTime:
-        // regar periodicamente
-        break;
-      case modeHum:
-        // regar por humedad. Mantiene en un rango de %10 de la humedad elegida.
-        break;
-      case modeMix:
-        // mixto
-        break;
-  }
 
 }
 
@@ -102,6 +102,53 @@ int read_LCD_buttons()  //FIXME
     
     return btnNONE;  // si todo falla
   }
+
+void regador() {
+
+  //TODO: investigar uso de threads
+  switch (modeSelected) {
+      case modeTime:
+        // regar periodicamente
+
+        lcd.setCursor(1,0);
+        lcd.print(millis());
+
+        //1min - 60000ms
+        //60min - 60000*60ms
+        //if (time >= (rangeHoursSet*60000*60))  { //se cumple el tiempo esperado para regar.
+
+        if (time >= rangeHoursSet)  {
+          //prender bomba
+          digitalWrite(motor, HIGH);
+          timeRegando = millis();
+          time = 0;
+          delay(200);
+          regando = true;
+        }
+
+        if (regando == true)  {
+        lcd.setCursor(12,0);
+        lcd.print(timeRegando);
+        delay(200);
+          if(timeRegando >= (timeRegarSet*60000)){  
+            //termina de regar
+            digitalWrite(motor, LOW);
+            delay(1000);
+            regando = false;
+            time = millis();  //inicio el time. //TODO: si se va del modeTime poner en 0 esta variable.
+            timeRegando = 0;
+            delay(200);
+          }
+        }
+        break;
+      case modeHum:
+        // regar por humedad. Mantiene en un rango de %10 de la humedad elegida.
+        break;
+      case modeMix:
+        // mixto
+        break;
+  }
+}
 
 void subMenuSelected() {
 
@@ -142,7 +189,8 @@ void subMenuTime() {
     if(lcd_key == btnSELECT)  {
       
       int timeRegar = 1;
-      rangeHoursSet = rangeHours;
+      //rangeHoursSet = rangeHours;
+      rangeHoursSet = 5000;
       lcd.clear();
 
       while (lcd_key != btnDOWN)  {
@@ -169,6 +217,7 @@ void subMenuTime() {
           lcd.setCursor(0,1);
           lcd.print(String(rangeHoursSet) + "Hs. / " + String(timeRegar) + "min.");
           lcd_key = btnDOWN; //Vuelve al menu principal
+          time = millis();  //inicio time
           delay(4000);
               
         }
