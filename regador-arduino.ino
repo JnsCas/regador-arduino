@@ -1,4 +1,5 @@
 #include <LiquidCrystal.h>
+#include <StopWatch.h>
 
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
@@ -9,8 +10,9 @@ int valueHumMaxSet = 0;
 int modeSelected = -1;
 int rangeHoursSet;
 int timeRegarSet;
-unsigned long time;
-unsigned long timeRegando;
+StopWatch time(StopWatch::SECONDS);
+StopWatch timeRegando(StopWatch::SECONDS);
+//StopWatch time_screensaver(StopWatch::SECONDS); //TODO
 bool regando = false;
 const int motor = 13;
 //teclado
@@ -49,10 +51,10 @@ void setup()
   lcd.print("REGADOR ARDUINO");
 
   delay(4000);
-  lcd.clear();
   analogWrite(10,80); //setea intensidad del lcd
   idModeRiego = modeTime; //inicializo modo de riego 
-  pinMode(motor,OUTPUT);  
+  pinMode(motor,OUTPUT);
+  lcd.clear();
   
 }
 
@@ -63,26 +65,21 @@ void loop()
 
   regador();
 
-  if (!regando) {
-    //MENU PRINCIPAL
-    lcd.setCursor(0,0);
-    lcd.print("MODO DE RIEGO: ");
-    lcd.setCursor(0,1);
-    lcd.print(modeRiego[idModeRiego]);
+  //MENU PRINCIPAL
+  lcd.setCursor(0,0);
+  lcd.print("MODO DE RIEGO: ");
+  lcd.setCursor(0,1);
+  lcd.print(modeRiego[idModeRiego]);
 
-    lcd_key = read_LCD_buttons();
+  lcd_key = read_LCD_buttons();
 
-    chooseValue(lcd_key, &idModeRiego, 0, 1, 0, 2);
+  chooseValue(lcd_key, &idModeRiego, 0, 1, 0, 2);
 
-    if(lcd_key == btnSELECT)  {
-      subMenuSelected();
-    }
-
-  } else {
-    lcd.setCursor(0,3);
-    lcd.print("REGANDO..");
+  if(lcd_key == btnSELECT)  {
+    subMenuSelected();
   }
-    
+
+
 
 }
 
@@ -110,34 +107,32 @@ void regador() {
       case modeTime:
         // regar periodicamente
 
-        lcd.setCursor(1,0);
-        lcd.print(millis());
-
-        //1min - 60000ms
-        //60min - 60000*60ms
-        //if (time >= (rangeHoursSet*60000*60))  { //se cumple el tiempo esperado para regar.
-
-        if (time >= rangeHoursSet)  {
+        if (time.elapsed() >= rangeHoursSet*60*60)  { //se cumple el tiempo esperado para regar.
           //prender bomba
           digitalWrite(motor, HIGH);
-          timeRegando = millis();
-          time = 0;
-          delay(200);
+          time.stop();
           regando = true;
+          lcd.clear();
+          timeRegando.start();
         }
 
-        if (regando == true)  {
-        lcd.setCursor(12,0);
-        lcd.print(timeRegando);
-        delay(200);
-          if(timeRegando >= (timeRegarSet*60000)){  
+        while (regando == true)  {
+          lcd.setCursor(4,0);
+          lcd.print("REGANDO..");
+          lcd.setCursor(5,1);
+          lcd.print(String(timeRegando.elapsed()) + "/" + String(timeRegarSet) + "s") ;
+          delay(10);
+          if(timeRegando.elapsed() >= (timeRegarSet)){  
             //termina de regar
+            lcd.setCursor(5,1);
+            lcd.print(String(timeRegando.elapsed()) + "/" + String(timeRegarSet) + "s") ;
             digitalWrite(motor, LOW);
             delay(1000);
             regando = false;
-            time = millis();  //inicio el time. //TODO: si se va del modeTime poner en 0 esta variable.
-            timeRegando = 0;
-            delay(200);
+            time.reset();  
+            time.start();   //inicio el time.
+            timeRegando.reset();
+            lcd.clear();
           }
         }
         break;
@@ -188,9 +183,9 @@ void subMenuTime() {
 
     if(lcd_key == btnSELECT)  {
       
+      rangeHoursSet = rangeHours;
+
       int timeRegar = 1;
-      //rangeHoursSet = rangeHours;
-      rangeHoursSet = 5000;
       lcd.clear();
 
       while (lcd_key != btnDOWN)  {
@@ -203,9 +198,10 @@ void subMenuTime() {
         lcd.setCursor(6,1);
         lcd.print("<" + String(timeRegar));
         lcd.setCursor(10,1); lcd.print(">");
-        lcd.setCursor(12,1); lcd.print("Min"); 
+        lcd.setCursor(12,1); lcd.print("seg"); 
 
-        chooseValue(lcd_key, &timeRegar, 7, 1, 1, 10);
+        // chooseValue(lcd_key, &timeRegar, 7, 1, 1, 10);  //por min
+        chooseValue(lcd_key, &timeRegar, 7, 1, 1, 10*60); //por seg
 
         if(lcd_key == btnSELECT)  {
 
@@ -215,9 +211,9 @@ void subMenuTime() {
           lcd.setCursor(0,0);
           lcd.print("Time Set:");
           lcd.setCursor(0,1);
-          lcd.print(String(rangeHoursSet) + "Hs. / " + String(timeRegar) + "min.");
+          lcd.print(String(rangeHoursSet) + "Hs. / " + String(timeRegar) + "seg.");
           lcd_key = btnDOWN; //Vuelve al menu principal
-          time = millis();  //inicio time
+          time.start();  //inicio time
           delay(4000);
               
         }
