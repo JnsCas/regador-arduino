@@ -25,9 +25,9 @@ const int motor = 13;
 //modos de riego
 #define modeTime  0
 #define modeHum   1
-#define modeMix   2
+#define modeManual   2
 
-char* modeRiego[] = {"<Tiempo        >","<Humedad       >","<Mixto         >"};
+char* modeRiego[] = {"<Tiempo        >","<Humedad       >","<Manual        >"};
 char* menuHum[] = {"<Actual        >","<Set           >"};
 
 byte arrow[8] = {
@@ -40,9 +40,21 @@ byte arrow[8] = {
   B00100,  
 };
 
+byte point[8] = {
+  B00000,
+  B00000,
+  B01110,
+  B11111,
+  B11111,
+  B01110,
+  B00000,
+  B00000
+};
+
 void setup()
 {
   lcd.createChar(0, arrow);
+  lcd.createChar(1, point);
   lcd.clear(); 
   lcd.begin(16, 2);
   lcd.setCursor(2,0); 
@@ -139,8 +151,8 @@ void regador() {
       case modeHum:
         // regar por humedad. Mantiene en un rango de %10 de la humedad elegida.
         break;
-      case modeMix:
-        // mixto
+      case modeManual:
+        // manual
         break;
   }
 }
@@ -156,9 +168,46 @@ void subMenuSelected() {
     case modeHum:
       subMenuHum();
       break;
-    case modeMix:
+    case modeManual:
       //subMenuMix();
+      subMenuManual();
       break;
+  }
+}
+
+void subMenuManual()  {
+  int lcd_key = btnNONE;
+  StopWatch time_manual(StopWatch::SECONDS);
+
+  while (lcd_key != btnDOWN)  {
+
+    lcd_key = read_LCD_buttons();
+
+    digitalWrite(motor, LOW);
+
+    lcd.setCursor(4,0);
+    lcd.print("Manual: ");
+    lcd.setCursor(2,1);
+    lcd.print(" ");
+    lcd.print("On");
+    lcd.setCursor(9,1);lcd.write(byte(1));
+    lcd.print("Off");
+
+    while(lcd_key == btnSELECT){
+        lcd_key = read_LCD_buttons();
+
+        digitalWrite(motor, HIGH);
+
+        lcd.setCursor(13,0);
+        time_manual.start();
+        lcd.print(time_manual.elapsed());
+        lcd.setCursor(9,1); 
+        lcd.print(" ");
+        lcd.setCursor(2,1);
+        lcd.write(byte(1)); 
+    }
+
+
   }
 }
 
