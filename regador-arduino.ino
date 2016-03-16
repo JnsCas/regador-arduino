@@ -118,7 +118,6 @@ void regador() {
   switch (modeSelected) {
       case modeTime:
         // regar periodicamente
-
         if (time.elapsed() >= rangeHoursSet*60*60)  { //se cumple el tiempo esperado para regar.
           //prender bomba
           digitalWrite(motor, HIGH);
@@ -129,24 +128,26 @@ void regador() {
         }
 
         while (regando == true)  {
-          lcd.setCursor(4,0);
-          lcd.print("REGANDO..");
-          lcd.setCursor(5,1);
-          lcd.print(String(timeRegando.elapsed()) + "/" + String(timeRegarSet) + "s") ;
-          delay(10);
+
           if(timeRegando.elapsed() >= (timeRegarSet)){  
             //termina de regar
             lcd.setCursor(5,1);
-            lcd.print(String(timeRegando.elapsed()) + "/" + String(timeRegarSet) + "s") ;
+//            lcd.print(String(timeRegando.elapsed()) + "/" + String(timeRegarSet) + "s") ;
             digitalWrite(motor, LOW);
             delay(1000);
             regando = false;
             time.reset();  
             time.start();   //inicio el time.
             timeRegando.reset();
-            lcd.clear();
           }
+
+          lcd.setCursor(4,0);
+          lcd.print("REGANDO..");
+          lcd.setCursor(5,1);
+          lcd.print(String(timeRegando.elapsed()) + "/" + String(timeRegarSet) + "s") ;
+          delay(10);
         }
+
         break;
       case modeHum:
         // regar por humedad. Mantiene en un rango de %10 de la humedad elegida.
@@ -193,6 +194,11 @@ void subMenuManual()  {
     lcd.setCursor(9,1);lcd.write(byte(1));
     lcd.print("Off");
 
+    if (lcd_key == btnSELECT) {
+      lcd.setCursor(13,0);
+      lcd.print("   ");
+    }
+
     while(lcd_key == btnSELECT){
         lcd_key = read_LCD_buttons();
 
@@ -206,7 +212,7 @@ void subMenuManual()  {
         lcd.setCursor(2,1);
         lcd.write(byte(1)); 
     }
-
+    time_manual.reset();
 
   }
 }
