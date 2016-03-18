@@ -80,6 +80,7 @@ void loop()
   //MENU PRINCIPAL
   lcd.setCursor(0,0);
   lcd.print("MODO DE RIEGO: ");
+  printModeSet();
   lcd.setCursor(0,1);
   lcd.print(modeRiego[idModeRiego]);
 
@@ -93,6 +94,14 @@ void loop()
 
 
 
+}
+
+void printModeSet() {
+  if (modeSelected == modeTime) {
+    lcd.print("T");
+  } else if (modeSelected == modeHum) {
+    lcd.print("H");
+  }
 }
 
 int read_LCD_buttons()  //FIXME
@@ -151,11 +160,32 @@ void regador() {
         break;
       case modeHum:
         // regar por humedad. Mantiene en un rango de %10 de la humedad elegida.
-        break;
-      case modeManual:
-        // manual
+        int sensorValue = getSensorValue();
+        if (sensorValue < valueHumMinSet){
+          //Regar hasta llegar al promedio rangos humedad definidos
+          int promHum = (valueHumMinSet + valueHumMaxSet) / 2;
+          //bool flagTolerance = true;  //le doy un margen de tolerancia al riego.
+          while (sensorValue < promHum){
+            digitalWrite(motor, HIGH);
+            sensorValue = getSensorValue();
+
+            lcd.setCursor(4,0);
+            lcd.print("REGANDO..");
+            lcd.setCursor(5,1);
+            //FIXME: BORRAR solo test
+            lcd.print(String(sensorValue) + "/" + String(promHum)) ;
+            delay(200);   
+          }
+          digitalWrite(motor, LOW);
+          //flagTolerance = false;
+        }
         break;
   }
+}
+
+int getSensorValue()  {
+  //en caso de agregar mas sensores, pasar por parametro.
+  return analogRead(A1) / 10;
 }
 
 void subMenuSelected() {
@@ -311,17 +341,13 @@ void subMenuHumSelected(int menuSelected)  {
 
   if (menuSelected == 0)  { //humedad actual
 
-    do{
+    int sensorValue = analogRead(A1);
+    lcd.setCursor(0,0);
+    lcd.print("Humedad Actual");
+    lcd.setCursor(6,1); 
+    lcd.print("%" + String(sensorValue/10));
 
-      lcd.setCursor(0,0);
-      lcd.print("Humedad Actual");
-      lcd.setCursor(15,0); lcd.write(byte(0));
-      lcd.setCursor(5,1); 
-      lcd.print("%90"); //hardcodeo ejemplo
-
-      lcd_key = read_LCD_buttons();
-
-    } while (lcd_key != btnDOWN);
+    delay(4000);
 
   } else  { //setear humedad
 
@@ -343,7 +369,7 @@ void subMenuHumSelected(int menuSelected)  {
       if (lcd_key == btnSELECT){
 
         valueHumMinSet = valueHumMin;
-        int valueHumMax = 1;
+        int valueHumMax = valueHumMin;
         lcd.clear();
 
         do{              
@@ -357,19 +383,31 @@ void subMenuHumSelected(int menuSelected)  {
               
           lcd_key = read_LCD_buttons();
 
-          chooseValue(lcd_key, &valueHumMax, 8, 1, 1, 100);
+          chooseValue(lcd_key, &valueHumMax, 8, 10, 1, 100);
           
           if(lcd_key == btnSELECT)  {
 
-            modeSelected = modeHum;
-            valueHumMaxSet  = valueHumMax;
             lcd.clear();
             lcd.setCursor(0,0);
-            lcd.print("Humedad Set:");
-            lcd.setCursor(5,1);
-            lcd.print("%" + String(valueHumMinSet) + " - %" + String(valueHumMax));
+
+            if (valueHumMin >= valueHumMax) {
+              
+              lcd.print("values bad");
+              lcd.setCursor(0,1);
+              lcd.print("try again");
+            
+            } else {
+
+              modeSelected = modeHum;
+              valueHumMaxSet  = valueHumMax;
+              lcd.print("Humedad Set:");
+              lcd.setCursor(5,1);
+              lcd.print("%" + String(valueHumMinSet) + " - %" + String(valueHumMax));
+            }
+
             delay(4000);
             lcd_key = btnDOWN; //vuelve al menu principal
+
           }
         } while (lcd_key != btnDOWN);
       }
@@ -380,7 +418,7 @@ void subMenuHumSelected(int menuSelected)  {
   lcd.clear();  //limpio menu
 }
 
-//modifica un valor de 0 a 100 elegido con cierto rango. initPos posicion del primer digito en el lcd.
+//modifica un valor de X a XXX elegido con cierto rango. initPos posicion del primer digito en el lcd.
 void chooseValue(int key_in ,int *value ,int initPos, int range,int rangeMin ,int rangeMax)  {
 
   int valueAnt  = *value;
